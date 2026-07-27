@@ -22,7 +22,7 @@
     "tasks",
     "timeline"
   ],
-  "author": "y2k Blue Visual contributors",
+  "author": "Rin",
   "license": "MIT",
   "dependencies": {
     "@openai/codex-sdk": "^0.145.0"

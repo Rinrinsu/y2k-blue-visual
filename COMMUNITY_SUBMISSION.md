@@ -2,7 +2,7 @@
 
 ## 提交前检查
 
-- `manifest.json` 与 `package.json` 使用不含个人信息的项目署名。
+- `manifest.json` 与 `package.json` 使用公开开发者署名 `Rin`。
 - 仓库根目录包含 MIT `LICENSE`。
 - 确认 GitHub 仓库为公开仓库，并把默认分支上的源码、`README.md`、`manifest.json` 和 `versions.json` 更新到最终版本。
 - 确认插件 ID `y2k-blue-visual` 和显示名称 `y2k Blue Visual` 在提交时仍未被占用。
