@@ -149,6 +149,7 @@ export class SearchService {
   private isExcluded(path: string): boolean {
     const normalizedPath = path.replace(/\\/g, "/").toLocaleLowerCase();
     const excluded = [this.app.vault.configDir, ".trash", ...this.excludedFolders()]
+      .filter((folder): folder is string => Boolean(folder))
       .map((folder) => folder.trim().replace(/^\/+|\/+$/g, "").toLocaleLowerCase())
       .filter(Boolean);
     return excluded.some((folder) => (
