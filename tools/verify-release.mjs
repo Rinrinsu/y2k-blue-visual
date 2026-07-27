@@ -10,9 +10,19 @@ const [manifest, packageJson, versions] = await Promise.all([
 
 const errors = [];
 const versionPattern = /^\d+\.\d+\.\d+$/;
+const pluginIdPattern = /^[a-z]+(?:-[a-z]+)*$/;
 
 if (!versionPattern.test(manifest.version)) {
   errors.push(`manifest.json version must use x.y.z: ${manifest.version}`);
+}
+if (
+  !pluginIdPattern.test(manifest.id) ||
+  manifest.id.endsWith("plugin") ||
+  manifest.id.includes("obsidian")
+) {
+  errors.push(
+    "manifest.json id must use lowercase letters and hyphens only, must not end with plugin, and must not contain obsidian"
+  );
 }
 if (packageJson.version !== manifest.version) {
   errors.push("package.json and manifest.json versions do not match");

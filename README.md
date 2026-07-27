@@ -68,13 +68,13 @@ tags: [project]
 4. 点击左侧工作台图标，或从命令面板运行“打开可视化工作台”。
 
 在社区版本正式发布前，开发者可从 GitHub Release 下载 `main.js`、`manifest.json`
-和 `styles.css`，放入 Vault 的 `.obsidian/plugins/y2k-blue-visual/` 目录进行测试。
+和 `styles.css`，放入 Vault 的 `.obsidian/plugins/y-two-k-blue-visual/` 目录进行测试。
 
 ## 开发
 
 1. 在本目录运行 `npm install`。
 2. 运行 `npm run build`，生成 `main.js`。
-3. 把 `manifest.json`、`main.js`、`styles.css` 复制到 Vault 的 `.obsidian/plugins/y2k-blue-visual/`。
+3. 把 `manifest.json`、`main.js`、`styles.css` 复制到 Vault 的 `.obsidian/plugins/y-two-k-blue-visual/`。
 4. 在 Obsidian 的“第三方插件”中启用 **y2k Blue Visual**。
 5. 点击左侧的工作台图标，或从命令面板运行“打开可视化工作台”。
 

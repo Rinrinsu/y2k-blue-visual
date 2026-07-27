@@ -1,6 +1,6 @@
 {
   "name": "y2k-blue-visual",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "A Y2K blue visual workspace for notes, projects, tasks, daily notes, and knowledge workflows.",
   "main": "main.js",
   "scripts": {
