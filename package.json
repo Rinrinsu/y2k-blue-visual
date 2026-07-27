@@ -1,0 +1,37 @@
+{
+  "name": "y2k-blue-visual",
+  "version": "0.1.0",
+  "description": "A Y2K blue visual workspace for notes, projects, tasks, daily notes, and knowledge workflows.",
+  "main": "main.js",
+  "scripts": {
+    "build:styles": "node tools/build-styles.mjs",
+    "bridge:codex": "node bridge/codex-bridge.mjs",
+    "dev": "node tools/build-styles.mjs && node esbuild.config.mjs",
+    "build": "node tools/build-styles.mjs && tsc -noEmit -skipLibCheck && node esbuild.config.mjs production",
+    "test:bridge": "node tools/codex-bridge-smoke.mjs",
+    "test:search": "node tools/search-smoke.mjs",
+    "test:project": "node tools/project-model-smoke.mjs",
+    "test:editor": "node tools/editor-model-smoke.mjs",
+    "test:ai": "node tools/ai-service-smoke.mjs",
+    "test:juicer-review": "node tools/juicer-review-smoke.mjs",
+    "verify:release": "node tools/verify-release.mjs"
+  },
+  "keywords": [
+    "obsidian",
+    "dashboard",
+    "tasks",
+    "timeline"
+  ],
+  "author": "y2k Blue Visual contributors",
+  "license": "MIT",
+  "dependencies": {
+    "@openai/codex-sdk": "^0.145.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.2",
+    "builtin-modules": "^4.0.0",
+    "esbuild": "^0.24.2",
+    "obsidian": "latest",
+    "typescript": "^5.7.2"
+  }
+}

@@ -1,0 +1,36 @@
+import { readFile } from "node:fs/promises";
+
+const readJson = async (path) => JSON.parse(await readFile(path, "utf8"));
+
+const [manifest, packageJson, versions] = await Promise.all([
+  readJson("manifest.json"),
+  readJson("package.json"),
+  readJson("versions.json")
+]);
+
+const errors = [];
+const versionPattern = /^\d+\.\d+\.\d+$/;
+
+if (!versionPattern.test(manifest.version)) {
+  errors.push(`manifest.json version must use x.y.z: ${manifest.version}`);
+}
+if (packageJson.version !== manifest.version) {
+  errors.push("package.json and manifest.json versions do not match");
+}
+if (versions[manifest.version] !== manifest.minAppVersion) {
+  errors.push("versions.json does not map the current version to minAppVersion");
+}
+if (!String(manifest.author ?? "").trim()) {
+  errors.push("manifest.json author is required");
+}
+if (!String(manifest.description ?? "").trim()) {
+  errors.push("manifest.json description is required");
+}
+
+if (errors.length > 0) {
+  throw new Error(errors.join("\n"));
+}
+
+console.log(
+  `Release metadata verified: ${manifest.id} ${manifest.version}, Obsidian ${manifest.minAppVersion}+`
+);

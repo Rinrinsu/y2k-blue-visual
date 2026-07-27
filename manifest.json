@@ -1,0 +1,9 @@
+{
+  "id": "y2k-blue-visual",
+  "name": "y2k Blue Visual",
+  "version": "0.1.0",
+  "minAppVersion": "1.11.4",
+  "description": "A Y2K blue visual workspace for notes, projects, tasks, daily notes, and knowledge workflows.",
+  "author": "y2k Blue Visual contributors",
+  "isDesktopOnly": false
+}

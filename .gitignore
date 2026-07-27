@@ -1,0 +1,10 @@
+bridge/.codex-bridge-token
+bridge/runtime/
+release-public/
+release-public-upload/
+visual-workspace-mac.zip
+y2k-blue-visual-mac.zip
+data.json
+.obsidian/
+.env
+.env.*
