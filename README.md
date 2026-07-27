@@ -1,5 +1,36 @@
 # y2k Blue Visual
 
+A Y2K-inspired visual workspace for Obsidian that brings notes, projects, tasks,
+daily notes, ideas, and knowledge workflows into one dashboard.
+
+## Highlights
+
+- Expandable multi-level navigation with persistent custom items
+- Project dashboards, progress tracking, task boards, and recent schedules
+- Editable database-style note tables and Markdown properties
+- Daily notes with in-page editing and automatic saving
+- Full-vault Boolean search with BM25-style keyword weighting
+- Visual Markdown editing, annotations, and review workflows
+- Optional OpenAI, Claude, secure gateway, and local Codex integrations
+- Pixel Sky light and dark themes with responsive layouts
+- No telemetry, advertising, or background data collection
+
+## Installation
+
+After the plugin is approved for the Obsidian Community directory:
+
+1. Open **Settings → Community plugins** in Obsidian.
+2. Select **Browse** and search for **y2k Blue Visual**.
+3. Select **Install**, then **Enable**.
+4. Use the ribbon icon or run **Open Visual Workspace** from the command palette.
+
+Before approval, developers can install the three files from the latest GitHub
+Release into `.obsidian/plugins/y-two-k-blue-visual/` for testing.
+
+---
+
+## 中文说明
+
 把 Obsidian 中分散的笔记、项目、任务和日期聚合成一个可视化工作台。
 
 ## 当前已实现
