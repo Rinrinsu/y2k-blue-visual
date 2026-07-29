@@ -12,7 +12,7 @@ daily notes, ideas, and knowledge workflows into one dashboard.
 - Full-vault Boolean search with BM25-style keyword weighting
 - Visual Markdown editing, annotations, and review workflows
 - Optional OpenAI, Claude, secure gateway, and local Codex integrations
-- Pixel Sky light and dark themes with responsive layouts
+- Pixel Sky light and dark themes with an optional Obsidian-wide skin
 - No telemetry, advertising, or background data collection
 
 ## Installation
@@ -54,6 +54,7 @@ Release into `.obsidian/plugins/y-two-k-blue-visual/` for testing.
 - 从真实 Vault 目录读取知识、灵感和榨汁队列
 - 全库布尔精确查询与 BM25 风格关键词加权搜索
 - Pixel Sky 浅色/深色主题、方格纸和便利贴纹理
+- 可选“全局美化模式”，把 Pixel Sky 延伸到 Obsidian 侧栏、标签页、编辑区和弹窗
 - 设置中可自定义主要文字、辅助文字以及待处理/进行中/完成/逾期状态色
 - 顶部常用操作使用放大像素图标与可见文字标签
 - 自动适配 Obsidian 明暗主题与窄屏
@@ -109,6 +110,9 @@ tags: [project]
 4. 在 Obsidian 的“第三方插件”中启用 **y2k Blue Visual**。
 5. 点击左侧的工作台图标，或从命令面板运行“打开可视化工作台”。
 
+如需美化整个 Obsidian，请进入插件设置，开启“全局美化模式”。该模式默认关闭；
+关闭开关或卸载插件后，Obsidian 会立即恢复原有主题。
+
 AI 功能需要 Obsidian 1.11.4 或更高版本。打开插件设置中的“AI 与右侧栏”，选择提供商、模型并安全保存密钥后，可使用“测试连接”验证。
 
 使用本机 Codex 时，先双击 `bridge/start-codex-bridge.cmd`，再把窗口显示的桥接令牌粘贴到插件设置。详细说明见 `bridge/README.md`。
@@ -131,14 +135,17 @@ src/styles/base.css        固定字号、间距和安全回退
 src/styles/components.css  工作台组件与响应式布局
 src/themes/obsidian.css    跟随 Obsidian 的原生主题
 src/themes/pixel-sky.css   Pixel Sky 视觉主题
+src/themes/global-pixel-sky.css  可选的 Obsidian 全局 Pixel Sky 外观
 src/theme-manager.ts       主题与图标包切换
+src/global-theme.ts        全局主题挂载与卸载清理
 styles.css                 构建时自动生成，请勿直接编辑
 ```
 
 - 修改视觉主题时只编辑 `src/themes/`，不会改动数据读取和功能代码。
 - 修改组件排版时编辑 `src/styles/components.css`。
 - 运行 `npm run build:styles` 可单独重新生成 `styles.css`。
-- 每个主题只作用于 `.vw-root`，不会污染 Obsidian 本体或其他插件。
+- 工作台主题默认只作用于 `.vw-root`；只有用户主动开启“全局美化模式”时，
+  才会通过 `body.vw-global-theme` 扩展到 Obsidian，其关闭与卸载流程会清理全部挂载状态。
 
 ## 下一步建议
 

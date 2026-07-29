@@ -7,6 +7,7 @@ import {
   AISettings,
   JuicerDraft
 } from "./types";
+import { isUnknownRecord, toUnknownArray } from "./type-guards";
 
 const SYSTEM_PROMPT = [
   "你是 y2k Blue Visual 中的笔记助手。",
@@ -189,7 +190,7 @@ export class AIService {
       headers: { Authorization: `Bearer ${secret}` },
       throw: false
     });
-    const body = isRecord(response.json) ? response.json : {};
+    const body = isUnknownRecord(response.json) ? response.json : {};
     if (response.status < 200 || response.status >= 300) {
       throw new Error(
         extractErrorMessage(body) || response.text || `HTTP ${response.status}`
@@ -239,31 +240,33 @@ export function parseProviderResponse(
   json: unknown,
   fallbackText = ""
 ): string {
-  const body = isRecord(json) ? json : {};
+  const body = isUnknownRecord(json) ? json : {};
   if (status < 200 || status >= 300) {
     const message = extractErrorMessage(body) || fallbackText || `HTTP ${status}`;
     throw new Error(message.slice(0, 500));
   }
   if (typeof body.text === "string") return body.text;
   if (typeof body.output_text === "string") return body.output_text;
-  if (Array.isArray(body.output)) {
-    const text = body.output
-      .flatMap((item) => isRecord(item) && Array.isArray(item.content) ? item.content : [])
-      .map((part) => isRecord(part) && typeof part.text === "string" ? part.text : "")
+  const output = toUnknownArray(body.output);
+  if (output.length) {
+    const text = output
+      .flatMap((item) => isUnknownRecord(item) ? toUnknownArray(item.content) : [])
+      .map((part) => isUnknownRecord(part) && typeof part.text === "string" ? part.text : "")
       .filter(Boolean)
       .join("\n");
     if (text) return text;
   }
-  if (Array.isArray(body.content)) {
-    const text = body.content
-      .map((part) => isRecord(part) && typeof part.text === "string" ? part.text : "")
+  const content = toUnknownArray(body.content);
+  if (content.length) {
+    const text = content
+      .map((part) => isUnknownRecord(part) && typeof part.text === "string" ? part.text : "")
       .filter(Boolean)
       .join("\n");
     if (text) return text;
   }
-  const choices = Array.isArray(body.choices) ? body.choices : [];
-  const first = isRecord(choices[0]) ? choices[0] : {};
-  const message = isRecord(first.message) ? first.message : {};
+  const choices = toUnknownArray(body.choices);
+  const first = isUnknownRecord(choices[0]) ? choices[0] : {};
+  const message = isUnknownRecord(first.message) ? first.message : {};
   if (typeof message.content === "string") return message.content;
   throw new Error("无法识别提供商返回的文本格式");
 }
@@ -274,7 +277,7 @@ export function parseBridgeResponse(
   fallbackText = ""
 ): AIChatResult {
   const text = parseProviderResponse(status, json, fallbackText);
-  const body = isRecord(json) ? json : {};
+  const body = isUnknownRecord(json) ? json : {};
   const threadId = typeof body.threadId === "string"
     && /^[a-zA-Z0-9-]{8,128}$/.test(body.threadId)
     ? body.threadId
@@ -300,7 +303,7 @@ export function parseJuicerDraft(value: string): JuicerDraft {
       throw new Error("AI 返回的 JSON 草稿格式不正确");
     }
   }
-  if (!isRecord(parsed)) throw new Error("AI 草稿不是对象");
+  if (!isUnknownRecord(parsed)) throw new Error("AI 草稿不是对象");
   const title = cleanText(parsed.title);
   const core = cleanText(parsed.core);
   const summary = cleanText(parsed.summary);
@@ -354,12 +357,8 @@ function apiEndpoint(baseUrl: string, resource: string): string {
 
 function extractErrorMessage(body: Record<string, unknown>): string {
   if (typeof body.message === "string") return body.message;
-  const error = isRecord(body.error) ? body.error : {};
+  const error = isUnknownRecord(body.error) ? body.error : {};
   return typeof error.message === "string" ? error.message : "";
-}
-
-function isRecord(value: unknown): value is Record<string, any> {
-  return Boolean(value && typeof value === "object" && !Array.isArray(value));
 }
 
 function cleanText(value: unknown): string {

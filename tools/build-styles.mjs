@@ -7,7 +7,8 @@ const sources = [
   "src/styles/base.css",
   "src/styles/components.css",
   "src/themes/obsidian.css",
-  "src/themes/pixel-sky.css"
+  "src/themes/pixel-sky.css",
+  "src/themes/global-pixel-sky.css"
 ];
 
 const parts = await Promise.all(sources.map(async (source) => {

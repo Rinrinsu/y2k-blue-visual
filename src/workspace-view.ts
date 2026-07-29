@@ -49,6 +49,7 @@ import {
 } from "./visual-editor";
 import { AIService } from "./ai-service";
 import { JuicerService } from "./juicer-service";
+import { toUnknownRecord } from "./type-guards";
 
 export const VIEW_TYPE = "visual-workspace-dashboard";
 
@@ -151,7 +152,7 @@ export class WorkspaceView extends ItemView {
 
   applyTheme(): void {
     const root = this.containerEl.children[1];
-    if (!(root instanceof HTMLElement)) return;
+    if (!root?.instanceOf(HTMLElement)) return;
     root.addClass("vw-root");
     root.addClass("vw-app-root");
     this.plugin.themeManager.apply(root, {
@@ -1229,7 +1230,9 @@ export class WorkspaceView extends ItemView {
     header.createEl("th", { text: "最近修改" });
     const body = table.createEl("tbody");
     files.forEach((file) => {
-      const frontmatter = this.app.metadataCache.getFileCache(file)?.frontmatter ?? {};
+      const frontmatter = toUnknownRecord(
+        this.app.metadataCache.getFileCache(file)?.frontmatter
+      );
       const row = body.createEl("tr");
       const titleCell = row.createEl("td");
       const open = titleCell.createEl("button", {
@@ -1691,7 +1694,7 @@ export class WorkspaceView extends ItemView {
     }
     for (const [index, file] of files.entries()) {
       const cache = this.app.metadataCache.getFileCache(file);
-      const frontmatter = cache?.frontmatter ?? {};
+      const frontmatter = toUnknownRecord(cache?.frontmatter);
       const card = wall.createEl("button", {
         cls: `vw-inspiration-card is-${index % 4}`
       });
@@ -1717,7 +1720,7 @@ export class WorkspaceView extends ItemView {
         text: content
           .replace(/^---[\s\S]*?---/, "")
           .replace(/^#\s+.*$/m, "")
-          .replace(/[#>*_`\[\]]/g, "")
+          .replace(/[#>*_`\u005B\u005D]/g, "")
           .trim()
           .slice(0, 180) || "打开卡片继续记录…",
         cls: "vw-inspiration-excerpt"
@@ -1820,7 +1823,9 @@ export class WorkspaceView extends ItemView {
       return;
     }
     files.forEach((file) => {
-      const frontmatter = this.app.metadataCache.getFileCache(file)?.frontmatter ?? {};
+      const frontmatter = toUnknownRecord(
+        this.app.metadataCache.getFileCache(file)?.frontmatter
+      );
       const processed = frontmatter.juicerStatus === "processed";
       const row = list.createDiv({ cls: "vw-juicer-card" });
       const body = row.createDiv({ cls: "vw-juicer-card-body" });
@@ -1855,7 +1860,9 @@ export class WorkspaceView extends ItemView {
       const top = card.createDiv({ cls: "vw-juicer-review-top" });
       const title = top.createEl("button", { text: file.basename, cls: "vw-link" });
       title.addEventListener("click", () => this.openVisualDocument(file));
-      const confidence = this.app.metadataCache.getFileCache(file)?.frontmatter?.confidence;
+      const confidence = toUnknownRecord(
+        this.app.metadataCache.getFileCache(file)?.frontmatter
+      ).confidence;
       if (confidence !== undefined) {
         top.createSpan({
           text: `可信度 ${Math.round(Number(confidence) * 100)}%`,

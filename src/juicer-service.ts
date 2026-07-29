@@ -11,6 +11,7 @@ import {
   JuicerReviewComparison,
   JuicerReviewDecisions
 } from "./juicer-review-model";
+import { toUnknownRecord, UnknownRecord } from "./type-guards";
 
 export interface JuicerReviewMetadata {
   platforms: string[];
@@ -69,7 +70,7 @@ export class JuicerService {
       ""
     ].join("\n");
     const review = await this.app.vault.create(path, content);
-    await this.app.fileManager.processFrontMatter(source, (sourceFrontmatter) => {
+    await this.app.fileManager.processFrontMatter(source, (sourceFrontmatter: UnknownRecord) => {
       sourceFrontmatter.juicerStatus = "processed";
       sourceFrontmatter.reviewFile = review.path;
       sourceFrontmatter.processedAt = new Date().toISOString();
@@ -78,7 +79,9 @@ export class JuicerService {
   }
 
   getReviewMetadata(file: TFile): JuicerReviewMetadata {
-    const frontmatter = this.app.metadataCache.getFileCache(file)?.frontmatter ?? {};
+    const frontmatter = toUnknownRecord(
+      this.app.metadataCache.getFileCache(file)?.frontmatter
+    );
     return {
       platforms: toStringArray(frontmatter.platforms),
       categories: toStringArray(frontmatter.categories),
@@ -95,7 +98,7 @@ export class JuicerService {
     file: TFile,
     metadata: JuicerReviewMetadata
   ): Promise<void> {
-    await this.app.fileManager.processFrontMatter(file, (frontmatter) => {
+    await this.app.fileManager.processFrontMatter(file, (frontmatter: UnknownRecord) => {
       frontmatter.platforms = metadata.platforms;
       frontmatter.categories = metadata.categories;
       frontmatter.tags = metadata.tags;
@@ -104,7 +107,9 @@ export class JuicerService {
 
   async getReviewComparison(file: TFile): Promise<JuicerReviewComparison> {
     const reviewContent = await this.app.vault.cachedRead(file);
-    const frontmatter = this.app.metadataCache.getFileCache(file)?.frontmatter ?? {};
+    const frontmatter = toUnknownRecord(
+      this.app.metadataCache.getFileCache(file)?.frontmatter
+    );
     const sourcePath = String(frontmatter.source ?? "");
     const source = sourcePath
       ? this.app.vault.getAbstractFileByPath(normalizePath(sourcePath))
@@ -128,7 +133,7 @@ export class JuicerService {
     const selectable = comparison.blocks.filter((block) => block.selectable);
     const acceptedBlocks = selectable.filter((block) => decisions[block.id] !== false).length;
     const rejectedBlocks = selectable.length - acceptedBlocks;
-    await this.app.fileManager.processFrontMatter(file, (frontmatter) => {
+    await this.app.fileManager.processFrontMatter(file, (frontmatter: UnknownRecord) => {
       frontmatter.reviewDecisions = decisions;
       frontmatter.bodyReviewStatus = "reviewed";
       frontmatter.acceptedBlocks = acceptedBlocks;
@@ -138,7 +143,9 @@ export class JuicerService {
   }
 
   async approveReview(file: TFile, knowledgeFolder: string): Promise<TFile> {
-    const frontmatter = this.app.metadataCache.getFileCache(file)?.frontmatter ?? {};
+    const frontmatter = toUnknownRecord(
+      this.app.metadataCache.getFileCache(file)?.frontmatter
+    );
     const categories = toStringArray(frontmatter.categories);
     const category = safePathSegment(categories[0] ?? "未分类");
     const folder = normalizePath(`${knowledgeFolder.replace(/\/$/, "")}/${category}`);
@@ -150,7 +157,7 @@ export class JuicerService {
       file,
       (currentContent) => replaceMarkdownBody(currentContent, acceptedBody)
     );
-    await this.app.fileManager.processFrontMatter(file, (next) => {
+    await this.app.fileManager.processFrontMatter(file, (next: UnknownRecord) => {
       next.type = "knowledge";
       next.status = "done";
       next.reviewedAt = new Date().toISOString();

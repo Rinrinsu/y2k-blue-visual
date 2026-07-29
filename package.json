@@ -1,6 +1,6 @@
 {
   "name": "y2k-blue-visual",
-  "version": "0.1.2",
+  "version": "0.1.3",
   "description": "A Y2K blue visual workspace for notes, projects, tasks, daily notes, and knowledge workflows.",
   "main": "main.js",
   "scripts": {
@@ -14,6 +14,7 @@
     "test:editor": "node tools/editor-model-smoke.mjs",
     "test:ai": "node tools/ai-service-smoke.mjs",
     "test:juicer-review": "node tools/juicer-review-smoke.mjs",
+    "test:global-theme": "node tools/global-theme-smoke.mjs",
     "verify:release": "node tools/verify-release.mjs"
   },
   "keywords": [
@@ -29,7 +30,6 @@
   },
   "devDependencies": {
     "@types/node": "^22.10.2",
-    "builtin-modules": "^4.0.0",
     "esbuild": "^0.24.2",
     "obsidian": "latest",
     "typescript": "^5.7.2"

@@ -12,6 +12,7 @@ import {
   createProjectStageId,
   normalizeProjectStages
 } from "./project-model";
+import { toUnknownRecord, UnknownRecord } from "./type-guards";
 
 export {
   calculateStageProgress,
@@ -30,7 +31,7 @@ export class VaultService {
 
     await Promise.all(files.map(async (file) => {
       const cache = this.app.metadataCache.getFileCache(file);
-      const frontmatter = cache?.frontmatter ?? {};
+      const frontmatter = toUnknownRecord(cache?.frontmatter);
       const tags = cache?.tags?.map((tag) => tag.tag.replace(/^#/, "")) ?? [];
       const frontmatterTags = Array.isArray(frontmatter.tags)
         ? frontmatter.tags.map(String)
@@ -154,7 +155,7 @@ export class VaultService {
   async updateProjectStages(file: TFile, stages: ProjectStage[]): Promise<void> {
     const normalized = normalizeProjectStages(stages);
     const progress = calculateStageProgress(normalized);
-    await this.app.fileManager.processFrontMatter(file, (frontmatter) => {
+    await this.app.fileManager.processFrontMatter(file, (frontmatter: UnknownRecord) => {
       frontmatter.stages = normalized.map((stage) => ({
         id: stage.id,
         name: stage.name,
@@ -174,7 +175,7 @@ export class VaultService {
     property: string,
     value: unknown
   ): Promise<void> {
-    await this.app.fileManager.processFrontMatter(file, (frontmatter) => {
+    await this.app.fileManager.processFrontMatter(file, (frontmatter: UnknownRecord) => {
       if (
         value === undefined
         || value === null

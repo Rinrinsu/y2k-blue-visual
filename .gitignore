@@ -1,5 +1,7 @@
 bridge/.codex-bridge-token
 bridge/runtime/
+node_modules/
+main.js
 release-public/
 release-public-upload/
 visual-workspace-mac.zip

@@ -198,7 +198,10 @@ function markdownToText(markdown: string): string {
     .replace(/^\s*(?:[-*+]|\d+\.)\s+/gm, "")
     .replace(/!\[([^\]]*)\]\([^)]+\)/g, "$1")
     .replace(/\[([^\]]+)\]\([^)]+\)/g, "$1")
-    .replace(/\[\[([^\]|]+)(?:\|([^\]]+))?\]\]/g, (_match, target, alias) => alias || target)
+    .replace(
+      /\[\[([^\]|]+)(?:\|([^\]]+))?\]\]/g,
+      (_match: string, target: string, alias?: string) => alias || target
+    )
     .replace(/[*_~`>|]/g, "")
     .replace(/\s+/g, " ")
     .trim();

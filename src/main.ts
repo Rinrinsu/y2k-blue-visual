@@ -6,6 +6,7 @@ import {
   PluginSettingTab,
   Setting
 } from "obsidian";
+import type { SettingDefinition, SettingDefinitionItem } from "obsidian";
 import { createDefaultNavigation } from "./navigation";
 import {
   ColorSchemeId,
@@ -18,6 +19,7 @@ import { DatabaseColumn, NavNode, VisualWorkspaceSettings } from "./types";
 import { AIService, getAISecretId } from "./ai-service";
 import { VIEW_TYPE, WorkspaceView } from "./workspace-view";
 import { getEmbeddedAssetUrl } from "./embedded-assets";
+import { GlobalThemeManager } from "./global-theme";
 
 function createDefaultDatabaseColumns(): DatabaseColumn[] {
   return [
@@ -55,6 +57,7 @@ const DEFAULT_SETTINGS: VisualWorkspaceSettings = {
   theme: "pixel-sky",
   iconPack: "pixel-blue",
   colorScheme: "light",
+  globalThemeEnabled: false,
   customColorsEnabled: false,
   uiColors: {
     text: "#18344d",
@@ -92,12 +95,45 @@ const DEFAULT_SETTINGS: VisualWorkspaceSettings = {
   navigation: createDefaultNavigation()
 };
 
+type SettingsControlKey =
+  | "projectTag"
+  | "showCompleted"
+  | "aiEnabled"
+  | "aiProvider"
+  | "aiModel"
+  | "aiEndpoint"
+  | "aiIncludeCurrentNote"
+  | "aiMaxContextChars"
+  | "aiReasoningEffort"
+  | "aiExcludedFolders"
+  | "dailyFolder"
+  | "projectFolder"
+  | "databaseNewNoteFolder"
+  | "knowledgeFolder"
+  | "inspirationFolder"
+  | "juicerFolder"
+  | "searchExcludedFolders"
+  | "theme"
+  | "globalThemeEnabled"
+  | "colorScheme"
+  | "customColorsEnabled"
+  | "colorText"
+  | "colorMuted"
+  | "colorTodo"
+  | "colorDoing"
+  | "colorDone"
+  | "colorOverdue"
+  | "iconPack"
+  | "hideObsidianSidebarOnOpen";
+
 export default class VisualWorkspacePlugin extends Plugin {
   settings: VisualWorkspaceSettings = DEFAULT_SETTINGS;
   readonly themeManager = new ThemeManager();
+  readonly globalThemeManager = new GlobalThemeManager();
 
   async onload(): Promise<void> {
     await this.loadSettings();
+    this.applyGlobalTheme();
     this.registerView(VIEW_TYPE, (leaf) => new WorkspaceView(leaf, this));
 
     this.addRibbonIcon(
@@ -111,13 +147,16 @@ export default class VisualWorkspacePlugin extends Plugin {
       callback: () => void this.activateView()
     });
     this.registerEvent(
-      this.app.workspace.on("css-change", () => this.applyThemeToOpenViews())
+      this.app.workspace.on("css-change", () => {
+        this.applyThemeToOpenViews();
+        this.applyGlobalTheme();
+      })
     );
     this.addSettingTab(new VisualWorkspaceSettingTab(this.app, this));
   }
 
   onunload(): void {
-    this.app.workspace.detachLeavesOfType(VIEW_TYPE);
+    this.clearGlobalTheme();
   }
 
   async activateView(): Promise<void> {
@@ -176,6 +215,20 @@ export default class VisualWorkspacePlugin extends Plugin {
     });
   }
 
+  applyGlobalTheme(): void {
+    this.globalThemeManager.apply(document.body, {
+      enabled: this.settings.globalThemeEnabled,
+      colorScheme: this.settings.colorScheme,
+      colors: this.settings.customColorsEnabled
+        ? this.settings.uiColors
+        : undefined
+    });
+  }
+
+  clearGlobalTheme(): void {
+    this.globalThemeManager.clear(document.body);
+  }
+
   refreshOpenViews(): void {
     this.app.workspace.getLeavesOfType(VIEW_TYPE).forEach((leaf) => {
       const view = leaf.view;
@@ -199,7 +252,514 @@ class VisualWorkspaceSettingTab extends PluginSettingTab {
     super(app, plugin);
   }
 
+  getSettingDefinitions(): SettingDefinitionItem[] {
+    const provider = this.plugin.settings.ai.provider;
+    const hasCustomColors = this.plugin.settings.customColorsEnabled;
+    return [
+      {
+        type: "group",
+        heading: "工作区",
+        items: [
+          {
+            name: "项目标签",
+            desc: "带有该标签或 type: project 的笔记会被识别为项目",
+            control: { type: "text", key: "projectTag" }
+          },
+          {
+            name: "显示已完成任务",
+            control: { type: "toggle", key: "showCompleted" }
+          }
+        ]
+      },
+      {
+        type: "group",
+        heading: "AI 与右侧栏",
+        items: [
+          {
+            name: "启用 AI 侧栏",
+            desc: "启用后可在工作区右上角显示或隐藏 AI 助手",
+            control: { type: "toggle", key: "aiEnabled" }
+          },
+          {
+            name: "AI 提供商",
+            desc: "本机 Codex 需要单独运行本地桥接服务；安全网关适合跨设备使用",
+            control: {
+              type: "dropdown",
+              key: "aiProvider",
+              options: {
+                openai: "OpenAI API",
+                anthropic: "Claude API",
+                "codex-local": "本机 Codex 桥接",
+                gateway: "自定义安全网关"
+              }
+            }
+          },
+          {
+            name: "模型",
+            desc: "填写提供商实际支持的模型 ID",
+            control: { type: "text", key: "aiModel" }
+          },
+          {
+            name: "接口地址",
+            desc: "通常保留默认值；网关和本机桥接需填写自己的 HTTPS/本机地址",
+            control: { type: "text", key: "aiEndpoint" }
+          },
+          {
+            name: "Codex 会话",
+            desc: this.plugin.settings.ai.codexThreadId
+              ? `已保存并续接：${this.plugin.settings.ai.codexThreadId.slice(0, 18)}…`
+              : "尚未开始；第一次发送消息后会自动保存 thread ID",
+            visible: provider === "codex-local",
+            render: (setting) => {
+              setting.addButton((button) => button
+                .setButtonText("新建会话")
+                .setDisabled(!this.plugin.settings.ai.codexThreadId)
+                .onClick(async () => {
+                  this.plugin.settings.ai.codexThreadId = "";
+                  await this.plugin.saveSettings();
+                  this.update();
+                  this.plugin.refreshOpenViews();
+                }));
+            }
+          },
+          this.secretSettingDefinition(),
+          {
+            name: "发送当前笔记",
+            desc: "关闭后，侧栏只发送你输入的问题",
+            control: { type: "toggle", key: "aiIncludeCurrentNote" }
+          },
+          {
+            name: "上下文长度上限",
+            desc: "限制单次发送的当前笔记字符数，避免意外发送过多内容",
+            control: {
+              type: "number",
+              key: "aiMaxContextChars",
+              min: 1000,
+              max: 100000,
+              step: 1000
+            }
+          },
+          {
+            name: "推理强度",
+            control: {
+              type: "dropdown",
+              key: "aiReasoningEffort",
+              options: {
+                none: "无",
+                low: "低",
+                medium: "中等",
+                high: "高"
+              }
+            }
+          },
+          {
+            name: "AI 排除目录",
+            desc: "这些目录中的笔记永远不会作为当前笔记上下文发送，用逗号分隔",
+            control: {
+              type: "text",
+              key: "aiExcludedFolders",
+              placeholder: "例如：Private, 财务/原始凭证"
+            }
+          }
+        ]
+      },
+      {
+        type: "group",
+        heading: "目录",
+        items: [
+          this.folderDefinition("每日笔记目录", "每日笔记会按 YYYY-MM-DD.md 保存到这里", "dailyFolder"),
+          this.folderDefinition("项目档案目录", "在项目档案中创建的项目保存位置", "projectFolder"),
+          this.folderDefinition("多维表新笔记目录", "从多维表新增笔记的保存位置", "databaseNewNoteFolder"),
+          this.folderDefinition("知识库目录", "审阅通过的正式知识条目目录", "knowledgeFolder"),
+          this.folderDefinition("灵感收集目录", "灵感卡片读取目录", "inspirationFolder"),
+          this.folderDefinition("榨汁机目录", "内部使用 Raw、Review 和 Categories 子目录", "juicerFolder"),
+          {
+            name: "搜索排除目录",
+            desc: "用英文逗号分隔；Vault 配置目录和回收站始终排除",
+            control: {
+              type: "text",
+              key: "searchExcludedFolders",
+              placeholder: "例如：Private, Attachments/Secret"
+            }
+          }
+        ]
+      },
+      {
+        type: "group",
+        heading: "外观",
+        items: [
+          {
+            name: "外观主题",
+            desc: "主题只改变颜色、字体、边框和装饰，不改变功能与数据",
+            control: {
+              type: "dropdown",
+              key: "theme",
+              options: { obsidian: "跟随 Obsidian", "pixel-sky": "Pixel Sky" }
+            }
+          },
+          {
+            name: "全局美化模式",
+            desc: "把 Pixel Sky 配色、纹理和边框扩展到 Obsidian 原生界面",
+            control: { type: "toggle", key: "globalThemeEnabled" }
+          },
+          {
+            name: "插件明暗模式",
+            control: {
+              type: "dropdown",
+              key: "colorScheme",
+              options: {
+                light: "浅色",
+                dark: "深色",
+                system: "跟随 Obsidian"
+              }
+            }
+          },
+          {
+            name: "自定义界面文字与状态颜色",
+            control: { type: "toggle", key: "customColorsEnabled" }
+          },
+          {
+            name: "主要文字",
+            visible: hasCustomColors,
+            control: { type: "color", key: "colorText" }
+          },
+          {
+            name: "辅助文字",
+            visible: hasCustomColors,
+            control: { type: "color", key: "colorMuted" }
+          },
+          {
+            name: "待处理状态",
+            visible: hasCustomColors,
+            control: { type: "color", key: "colorTodo" }
+          },
+          {
+            name: "进行中状态",
+            visible: hasCustomColors,
+            control: { type: "color", key: "colorDoing" }
+          },
+          {
+            name: "已完成状态",
+            visible: hasCustomColors,
+            control: { type: "color", key: "colorDone" }
+          },
+          {
+            name: "逾期 / 错误状态",
+            visible: hasCustomColors,
+            control: { type: "color", key: "colorOverdue" }
+          },
+          {
+            name: "恢复推荐配色",
+            desc: "恢复浅蓝 Pixel Sky 的推荐文字与状态色",
+            visible: hasCustomColors,
+            render: (setting) => {
+              setting.addButton((button) => button
+                .setButtonText("恢复")
+                .onClick(async () => {
+                  this.plugin.settings.uiColors = { ...DEFAULT_SETTINGS.uiColors };
+                  await this.plugin.saveSettings();
+                  this.plugin.applyThemeToOpenViews();
+                  this.plugin.applyGlobalTheme();
+                  this.update();
+                }));
+            }
+          },
+          {
+            name: "图标包",
+            control: {
+              type: "dropdown",
+              key: "iconPack",
+              options: {
+                obsidian: "Obsidian 默认",
+                "pixel-blue": "Pixel Blue"
+              }
+            }
+          },
+          {
+            name: "打开插件时隐藏 Obsidian 左栏",
+            desc: "只收起原生文件栏，不修改文件或文件夹",
+            control: { type: "toggle", key: "hideObsidianSidebarOnOpen" }
+          },
+          {
+            name: "恢复默认导航",
+            desc: "仅重置左侧导航结构，不删除任何 Vault 文件",
+            render: (setting) => {
+              setting.addButton((button) => button
+                .setButtonText("恢复")
+                .onClick(async () => {
+                  this.plugin.settings.navigation = createDefaultNavigation();
+                  await this.plugin.saveSettings();
+                  this.plugin.refreshOpenViews();
+                  this.update();
+                }));
+            }
+          }
+        ]
+      }
+    ];
+  }
+
+  getControlValue(key: string): unknown {
+    switch (key as SettingsControlKey) {
+      case "projectTag": return this.plugin.settings.projectTag;
+      case "showCompleted": return this.plugin.settings.showCompleted;
+      case "aiEnabled": return this.plugin.settings.ai.enabled;
+      case "aiProvider": return this.plugin.settings.ai.provider;
+      case "aiModel": return this.plugin.settings.ai.model;
+      case "aiEndpoint": return this.plugin.settings.ai[this.aiEndpointKey()];
+      case "aiIncludeCurrentNote": return this.plugin.settings.ai.includeCurrentNote;
+      case "aiMaxContextChars": return this.plugin.settings.ai.maxContextChars;
+      case "aiReasoningEffort": return this.plugin.settings.ai.reasoningEffort;
+      case "aiExcludedFolders": return this.plugin.settings.ai.excludedFolders.join(", ");
+      case "dailyFolder": return this.plugin.settings.dailyFolder;
+      case "projectFolder": return this.plugin.settings.projectFolder;
+      case "databaseNewNoteFolder": return this.plugin.settings.databaseNewNoteFolder;
+      case "knowledgeFolder": return this.plugin.settings.knowledgeFolder;
+      case "inspirationFolder": return this.plugin.settings.inspirationFolder;
+      case "juicerFolder": return this.plugin.settings.juicerFolder;
+      case "searchExcludedFolders": return this.plugin.settings.searchExcludedFolders.join(", ");
+      case "theme": return this.plugin.settings.theme;
+      case "globalThemeEnabled": return this.plugin.settings.globalThemeEnabled;
+      case "colorScheme": return this.plugin.settings.colorScheme;
+      case "customColorsEnabled": return this.plugin.settings.customColorsEnabled;
+      case "colorText": return this.plugin.settings.uiColors.text;
+      case "colorMuted": return this.plugin.settings.uiColors.muted;
+      case "colorTodo": return this.plugin.settings.uiColors.todo;
+      case "colorDoing": return this.plugin.settings.uiColors.doing;
+      case "colorDone": return this.plugin.settings.uiColors.done;
+      case "colorOverdue": return this.plugin.settings.uiColors.overdue;
+      case "iconPack": return this.plugin.settings.iconPack;
+      case "hideObsidianSidebarOnOpen": return this.plugin.settings.hideObsidianSidebarOnOpen;
+      default: return undefined;
+    }
+  }
+
+  async setControlValue(key: string, value: unknown): Promise<void> {
+    const text = typeof value === "string" ? value : "";
+    switch (key as SettingsControlKey) {
+      case "projectTag":
+        this.plugin.settings.projectTag = text.replace(/^#/, "").trim() || "project";
+        break;
+      case "showCompleted":
+        this.plugin.settings.showCompleted = value === true;
+        break;
+      case "aiEnabled":
+        this.plugin.settings.ai.enabled = value === true;
+        if (!this.plugin.settings.ai.enabled) this.plugin.settings.ai.sidebarOpen = false;
+        break;
+      case "aiProvider":
+        if (!["openai", "anthropic", "codex-local", "gateway"].includes(text)) return;
+        this.plugin.settings.ai.provider = text as typeof this.plugin.settings.ai.provider;
+        if (text === "openai") this.plugin.settings.ai.model = "gpt-5.6-terra";
+        if (text === "anthropic") this.plugin.settings.ai.model = "claude-sonnet-4-20250514";
+        if (text === "codex-local") this.plugin.settings.ai.model = "default";
+        break;
+      case "aiModel":
+        this.plugin.settings.ai.model = text.trim();
+        break;
+      case "aiEndpoint":
+        this.plugin.settings.ai[this.aiEndpointKey()] = text.trim();
+        break;
+      case "aiIncludeCurrentNote":
+        this.plugin.settings.ai.includeCurrentNote = value === true;
+        break;
+      case "aiMaxContextChars":
+        this.plugin.settings.ai.maxContextChars = Math.max(
+          1000,
+          Math.min(100000, typeof value === "number" ? value : 24000)
+        );
+        break;
+      case "aiReasoningEffort":
+        if (!["none", "low", "medium", "high"].includes(text)) return;
+        this.plugin.settings.ai.reasoningEffort = text as typeof this.plugin.settings.ai.reasoningEffort;
+        break;
+      case "aiExcludedFolders":
+        this.plugin.settings.ai.excludedFolders = text
+          .split(/[,，]/)
+          .map((folder) => folder.trim().replace(/^\/+|\/+$/g, ""))
+          .filter(Boolean);
+        break;
+      case "dailyFolder":
+      case "projectFolder":
+      case "databaseNewNoteFolder":
+      case "knowledgeFolder":
+      case "inspirationFolder":
+      case "juicerFolder": {
+        const folderKey = key as
+          | "dailyFolder"
+          | "projectFolder"
+          | "databaseNewNoteFolder"
+          | "knowledgeFolder"
+          | "inspirationFolder"
+          | "juicerFolder";
+        this.plugin.settings[folderKey] = text.trim().replace(/^\/+|\/+$/g, "");
+        break;
+      }
+      case "searchExcludedFolders":
+        this.plugin.settings.searchExcludedFolders = text
+          .split(",")
+          .map((folder) => folder.trim())
+          .filter(Boolean);
+        break;
+      case "theme":
+        if (!["obsidian", "pixel-sky"].includes(text)) return;
+        this.plugin.settings.theme = text as ThemeId;
+        break;
+      case "globalThemeEnabled":
+        this.plugin.settings.globalThemeEnabled = value === true;
+        break;
+      case "colorScheme":
+        if (!["light", "dark", "system"].includes(text)) return;
+        this.plugin.settings.colorScheme = text as ColorSchemeId;
+        break;
+      case "customColorsEnabled":
+        this.plugin.settings.customColorsEnabled = value === true;
+        break;
+      case "colorText": this.plugin.settings.uiColors.text = text; break;
+      case "colorMuted": this.plugin.settings.uiColors.muted = text; break;
+      case "colorTodo": this.plugin.settings.uiColors.todo = text; break;
+      case "colorDoing": this.plugin.settings.uiColors.doing = text; break;
+      case "colorDone": this.plugin.settings.uiColors.done = text; break;
+      case "colorOverdue": this.plugin.settings.uiColors.overdue = text; break;
+      case "iconPack":
+        if (!["obsidian", "pixel-blue"].includes(text)) return;
+        this.plugin.settings.iconPack = text as IconPackId;
+        break;
+      case "hideObsidianSidebarOnOpen":
+        this.plugin.settings.hideObsidianSidebarOnOpen = value === true;
+        break;
+      default:
+        return;
+    }
+    await this.plugin.saveSettings();
+    this.applySettingSideEffects(key as SettingsControlKey);
+  }
+
+  private secretSettingDefinition(): SettingDefinition {
+    const provider = this.plugin.settings.ai.provider;
+    const secretId = getAISecretId(provider);
+    const hasSecret = Boolean(this.app.secretStorage.getSecret(secretId));
+    return {
+      name: provider === "codex-local" ? "桥接令牌" : "API 密钥",
+      desc: hasSecret ? "已安全保存；留空不会覆盖现有密钥" : "尚未配置",
+      render: (setting) => {
+        setting
+          .addText((text) => {
+            text.inputEl.type = "password";
+            text.setPlaceholder(hasSecret ? "••••••••（已配置）" : "粘贴密钥");
+            text.onChange((value) => {
+              const secret = value.trim();
+              if (secret) this.app.secretStorage.setSecret(secretId, secret);
+            });
+          })
+          .addButton((button) => button
+            .setButtonText("清除")
+            .onClick(() => {
+              this.app.secretStorage.setSecret(secretId, "");
+              this.update();
+            }))
+          .addButton((button) => button
+            .setButtonText("测试连接")
+            .onClick(async () => {
+              button.setDisabled(true);
+              button.setButtonText("测试中…");
+              try {
+                await new AIService(this.app, () => this.plugin.settings.ai)
+                  .testConnection();
+                button.setButtonText("连接成功");
+              } catch (error) {
+                button.setButtonText("连接失败");
+                new Notice(
+                  `AI 连接失败：${error instanceof Error ? error.message : String(error)}`
+                );
+              } finally {
+                window.setTimeout(() => {
+                  button.setDisabled(false);
+                  button.setButtonText("测试连接");
+                }, 1500);
+              }
+            }));
+      }
+    };
+  }
+
+  private folderDefinition(
+    name: string,
+    desc: string,
+    key:
+      | "dailyFolder"
+      | "projectFolder"
+      | "databaseNewNoteFolder"
+      | "knowledgeFolder"
+      | "inspirationFolder"
+      | "juicerFolder"
+  ): SettingDefinition {
+    return {
+      name,
+      desc,
+      control: {
+        type: "folder",
+        key,
+        includeRoot: true
+      }
+    };
+  }
+
+  private aiEndpointKey():
+    | "openaiBaseUrl"
+    | "anthropicBaseUrl"
+    | "bridgeUrl"
+    | "gatewayUrl" {
+    return this.plugin.settings.ai.provider === "openai"
+      ? "openaiBaseUrl"
+      : this.plugin.settings.ai.provider === "anthropic"
+        ? "anthropicBaseUrl"
+        : this.plugin.settings.ai.provider === "codex-local"
+          ? "bridgeUrl"
+          : "gatewayUrl";
+  }
+
+  private applySettingSideEffects(key: SettingsControlKey): void {
+    if (key === "searchExcludedFolders") {
+      this.plugin.invalidateSearchIndexes();
+    }
+    if (
+      key === "theme"
+      || key === "colorScheme"
+      || key === "customColorsEnabled"
+      || key === "iconPack"
+      || key.startsWith("color")
+    ) {
+      this.plugin.applyThemeToOpenViews();
+    }
+    if (
+      key === "globalThemeEnabled"
+      || key === "colorScheme"
+      || key === "customColorsEnabled"
+      || key.startsWith("color")
+    ) {
+      this.plugin.applyGlobalTheme();
+    }
+    this.plugin.refreshOpenViews();
+    if (key === "aiProvider" || key === "customColorsEnabled") {
+      this.update();
+    }
+  }
+
+  private refreshSettings(): void {
+    const update = Reflect.get(this, "update");
+    if (typeof update === "function") {
+      update.call(this);
+    } else {
+      this.renderLegacySettings();
+    }
+  }
+
   display(): void {
+    this.renderLegacySettings();
+  }
+
+  private renderLegacySettings(): void {
     const { containerEl } = this;
     containerEl.empty();
 
@@ -260,7 +820,7 @@ class VisualWorkspaceSettingTab extends PluginSettingTab {
           }
           if (value === "codex-local") this.plugin.settings.ai.model = "default";
           await this.plugin.saveSettings();
-          this.display();
+          this.refreshSettings();
           this.plugin.refreshOpenViews();
         }));
 
@@ -303,7 +863,7 @@ class VisualWorkspaceSettingTab extends PluginSettingTab {
           .onClick(async () => {
             this.plugin.settings.ai.codexThreadId = "";
             await this.plugin.saveSettings();
-            this.display();
+            this.refreshSettings();
             this.plugin.refreshOpenViews();
           }));
     }
@@ -325,7 +885,7 @@ class VisualWorkspaceSettingTab extends PluginSettingTab {
         .setButtonText("清除")
         .onClick(() => {
           this.app.secretStorage.setSecret(secretId, "");
-          this.display();
+          this.refreshSettings();
         }))
       .addButton((button) => button
         .setButtonText("测试连接")
@@ -461,11 +1021,23 @@ class VisualWorkspaceSettingTab extends PluginSettingTab {
           this.plugin.settings.theme = value as ThemeId;
           await this.plugin.saveSettings();
           this.plugin.applyThemeToOpenViews();
+          this.plugin.applyGlobalTheme();
+        }));
+
+    new Setting(containerEl)
+      .setName("全局美化模式")
+      .setDesc("独立把 Pixel Sky 配色、方格纸纹理和像素边框扩展到 Obsidian 侧栏、标签页、编辑区与弹窗；关闭或卸载插件会立即恢复")
+      .addToggle((toggle) => toggle
+        .setValue(this.plugin.settings.globalThemeEnabled)
+        .onChange(async (value) => {
+          this.plugin.settings.globalThemeEnabled = value;
+          await this.plugin.saveSettings();
+          this.plugin.applyGlobalTheme();
         }));
 
     new Setting(containerEl)
       .setName("插件明暗模式")
-      .setDesc("只改变 y2k Blue Visual；默认使用浅蓝像素纸张风，不影响 Obsidian 原生主题")
+      .setDesc("改变 y2k Blue Visual；开启全局美化模式时也会同步应用到 Obsidian")
       .addDropdown((dropdown) => dropdown
         .addOption("light", "浅色（浅蓝像素纸张）")
         .addOption("dark", "深色（深蓝像素蓝图）")
@@ -475,6 +1047,7 @@ class VisualWorkspaceSettingTab extends PluginSettingTab {
           this.plugin.settings.colorScheme = value as ColorSchemeId;
           await this.plugin.saveSettings();
           this.plugin.applyThemeToOpenViews();
+          this.plugin.applyGlobalTheme();
         }));
 
     new Setting(containerEl)
@@ -486,7 +1059,8 @@ class VisualWorkspaceSettingTab extends PluginSettingTab {
           this.plugin.settings.customColorsEnabled = value;
           await this.plugin.saveSettings();
           this.plugin.applyThemeToOpenViews();
-          this.display();
+          this.plugin.applyGlobalTheme();
+          this.refreshSettings();
         }));
 
     if (this.plugin.settings.customColorsEnabled) {
@@ -505,7 +1079,8 @@ class VisualWorkspaceSettingTab extends PluginSettingTab {
             this.plugin.settings.uiColors = { ...DEFAULT_SETTINGS.uiColors };
             await this.plugin.saveSettings();
             this.plugin.applyThemeToOpenViews();
-            this.display();
+            this.plugin.applyGlobalTheme();
+            this.refreshSettings();
           }));
     }
 
@@ -541,7 +1116,7 @@ class VisualWorkspaceSettingTab extends PluginSettingTab {
           this.plugin.settings.navigation = createDefaultNavigation();
           await this.plugin.saveSettings();
           this.plugin.refreshOpenViews();
-          this.display();
+          this.refreshSettings();
         }));
   }
 
@@ -584,6 +1159,7 @@ class VisualWorkspaceSettingTab extends PluginSettingTab {
           this.plugin.settings.uiColors[key] = value;
           await this.plugin.saveSettings();
           this.plugin.applyThemeToOpenViews();
+          this.plugin.applyGlobalTheme();
         }));
   }
 }

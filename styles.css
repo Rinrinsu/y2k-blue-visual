@@ -209,7 +209,7 @@
 
 .vw-root button.vw-stat.is-action {
   width: 100%;
-  height: auto !important;
+  height: auto;
   min-width: 0;
   appearance: none;
   color: var(--vw-ink);
@@ -310,7 +310,7 @@
   border: 0;
   color: var(--vw-ink);
   background: transparent;
-  box-shadow: none !important;
+  box-shadow: none;
   cursor: pointer;
   font: inherit;
   font-weight: 600;
@@ -406,7 +406,7 @@
 .vw-root .vw-task {
   display: flex;
   width: 100%;
-  height: auto !important;
+  height: auto;
   min-height: 66px;
   flex-direction: column;
   align-items: stretch;
@@ -452,7 +452,7 @@
   border: 0;
   color: var(--vw-ink);
   background: transparent;
-  box-shadow: none !important;
+  box-shadow: none;
   cursor: pointer;
   font-weight: 600;
   line-height: 1.45;
@@ -508,9 +508,9 @@
   padding: 3px 6px;
   border: 1px solid var(--vw-line);
   border-radius: var(--vw-radius);
-  color: var(--vw-ink) !important;
-  background-color: var(--vw-paper) !important;
-  box-shadow: none !important;
+  color: var(--vw-ink);
+  background-color: var(--vw-paper);
+  box-shadow: none;
   font: inherit;
 }
 
@@ -518,12 +518,12 @@
 .vw-root .vw-task-date:focus,
 .vw-root .vw-task-date:focus-visible,
 .vw-root .vw-task-date:active {
-  border-color: var(--vw-accent-strong) !important;
+  border-color: var(--vw-accent-strong);
   outline: 1px solid var(--vw-accent-strong);
   outline-offset: 1px;
-  color: var(--vw-ink) !important;
-  background-color: var(--vw-paper) !important;
-  box-shadow: none !important;
+  color: var(--vw-ink);
+  background-color: var(--vw-paper);
+  box-shadow: none;
 }
 
 .vw-root .vw-task-date::-webkit-datetime-edit,
@@ -1265,7 +1265,7 @@
   border-radius: var(--vw-radius);
   color: var(--vw-muted);
   background: transparent;
-  box-shadow: none !important;
+  box-shadow: none;
   cursor: pointer;
   font: inherit;
   font-size: var(--vw-font-label);
@@ -1369,7 +1369,7 @@
 
 .vw-root .vw-file-row {
   min-height: 62px;
-  padding: 10px 12px !important;
+  padding: 10px 12px;
 }
 
 .vw-root .vw-file-row:hover,
@@ -1544,7 +1544,7 @@
   display: block;
   width: 100%;
   max-width: 100%;
-  height: auto !important;
+  height: auto;
   min-height: 0;
   padding: 0;
   color: var(--vw-ink);
@@ -1581,7 +1581,7 @@
 
 .vw-root .vw-editable-cell {
   min-width: 132px;
-  padding: 5px !important;
+  padding: 5px;
 }
 
 .vw-root .vw-cell-control {
@@ -2140,16 +2140,16 @@
 
 /* Inspiration wall */
 .vw-root .vw-inspiration-wall {
-  columns: 3 230px;
-  column-gap: var(--vw-space-4);
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(230px, 100%), 1fr));
+  gap: var(--vw-space-4);
   padding: var(--vw-space-2) 2px var(--vw-space-7);
 }
 
 .vw-root .vw-inspiration-card {
   position: relative;
-  display: inline-flex;
+  display: flex;
   width: 100%;
-  break-inside: avoid;
   flex-direction: column;
   gap: var(--vw-space-3);
   margin: 0 0 var(--vw-space-4);
@@ -2247,10 +2247,9 @@
 }
 
 .vw-root .vw-inspiration-empty {
-  display: inline-flex;
+  display: flex;
   width: 100%;
   min-height: 190px;
-  break-inside: avoid;
   flex-direction: column;
   align-items: flex-start;
   justify-content: center;
@@ -2581,8 +2580,8 @@
 
 .vw-root input.vw-search-input,
 .vw-root input.vw-search-input:focus {
-  color: var(--vw-ink) !important;
-  background: var(--vw-paper) !important;
+  color: var(--vw-ink);
+  background: var(--vw-paper);
   caret-color: var(--vw-accent-strong);
 }
 
@@ -2632,7 +2631,7 @@
   width: 100%;
   min-width: 0;
   max-width: 100%;
-  height: auto !important;
+  height: auto;
   min-height: 112px;
   flex-direction: column;
   align-items: stretch;
@@ -3095,5 +3094,212 @@
 .vw-root[data-vw-theme="pixel-sky"] .vw-task:hover {
   box-shadow: 5px 5px 0 color-mix(in srgb, var(--vw-accent) 28%, transparent);
   transform: translate(-1px, -1px) rotate(0);
+}
+
+/* source: src/themes/global-pixel-sky.css */
+/*
+ * Optional Obsidian-wide Pixel Sky skin.
+ * Every selector is gated by a body class that the plugin removes on disable/unload.
+ */
+body.vw-global-theme[data-vw-global-theme="pixel-sky"][data-vw-global-color-scheme="light"] {
+  color-scheme: light;
+  --vw-global-canvas: #edf6ff;
+  --vw-global-paper: #fbfdff;
+  --vw-global-panel: #e4f1fc;
+  --vw-global-panel-strong: #d6eafb;
+  --vw-global-line: #a9c9e1;
+  --vw-global-grid: rgb(69 137 188 / 9%);
+  --vw-global-shadow: 5px 5px 0 rgb(88 156 207 / 14%);
+  --vw-global-notice-bg: #132233;
+  --vw-global-notice-text: #fffafc;
+  --vw-global-notice-border: #6f9fc3;
+  --background-primary: var(--vw-global-paper);
+  --background-primary-alt: #f3f9ff;
+  --background-secondary: var(--vw-global-panel);
+  --background-secondary-alt: var(--vw-global-panel-strong);
+  --background-modifier-border: var(--vw-global-line);
+  --background-modifier-border-hover: #82afd0;
+  --background-modifier-hover: #d9edfc;
+  --background-modifier-active-hover: #cce5f8;
+  --background-modifier-form-field: #f8fcff;
+  --background-modifier-form-field-highlighted: #fff;
+  --text-normal: var(--vw-global-text, #18344d);
+  --text-muted: var(--vw-global-muted, #587791);
+  --text-faint: #7893a9;
+  --text-accent: var(--vw-global-accent, #2f78ad);
+  --text-accent-hover: #205f8d;
+  --text-on-accent: #fff;
+  --interactive-accent: var(--vw-global-accent, #2f78ad);
+  --interactive-accent-hover: #246996;
+  --link-color: var(--vw-global-accent, #2f78ad);
+  --link-color-hover: #205f8d;
+  --color-green: var(--vw-global-success, #2f8f64);
+  --text-error: var(--vw-global-error, #c34444);
+  --titlebar-background: #deeffc;
+  --titlebar-background-focused: #d4eafb;
+  --tab-outline-color: var(--vw-global-line);
+  --divider-color: var(--vw-global-line);
+  --scrollbar-bg: transparent;
+  --scrollbar-thumb-bg: #a8c9e1;
+}
+
+body.vw-global-theme[data-vw-global-theme="pixel-sky"][data-vw-global-color-scheme="dark"] {
+  color-scheme: dark;
+  --vw-global-canvas: #0d1925;
+  --vw-global-paper: #142638;
+  --vw-global-panel: #192e42;
+  --vw-global-panel-strong: #203b53;
+  --vw-global-line: #365d7a;
+  --vw-global-grid: rgb(145 210 255 / 8%);
+  --vw-global-shadow: 5px 5px 0 rgb(3 10 18 / 38%);
+  --vw-global-notice-bg: #eef8ff;
+  --vw-global-notice-text: #112a40;
+  --vw-global-notice-border: #6f9fc3;
+  --background-primary: var(--vw-global-paper);
+  --background-primary-alt: #172b3e;
+  --background-secondary: var(--vw-global-panel);
+  --background-secondary-alt: var(--vw-global-panel-strong);
+  --background-modifier-border: var(--vw-global-line);
+  --background-modifier-border-hover: #4d7a9a;
+  --background-modifier-hover: #203d56;
+  --background-modifier-active-hover: #284863;
+  --background-modifier-form-field: #102131;
+  --background-modifier-form-field-highlighted: #182e42;
+  --text-normal: var(--vw-global-text, #eaf6ff);
+  --text-muted: var(--vw-global-muted, #a1bfd6);
+  --text-faint: #7595ad;
+  --text-accent: var(--vw-global-accent, #91d2ff);
+  --text-accent-hover: #b7e2ff;
+  --text-on-accent: #0e2435;
+  --interactive-accent: var(--vw-global-accent, #78bcef);
+  --interactive-accent-hover: #91d2ff;
+  --link-color: var(--vw-global-accent, #91d2ff);
+  --link-color-hover: #b7e2ff;
+  --color-green: var(--vw-global-success, #6fd19a);
+  --text-error: var(--vw-global-error, #ff8d8d);
+  --titlebar-background: #122536;
+  --titlebar-background-focused: #172e42;
+  --tab-outline-color: var(--vw-global-line);
+  --divider-color: var(--vw-global-line);
+  --scrollbar-bg: transparent;
+  --scrollbar-thumb-bg: #365d7a;
+}
+
+body.vw-global-theme[data-vw-global-theme="pixel-sky"] {
+  --radius-s: 0;
+  --radius-m: 0;
+  --radius-l: 0;
+  --input-radius: 0;
+  --button-radius: 0;
+  --tab-radius-active: 0;
+  --modal-radius: 0;
+  --menu-radius: 0;
+  --checkbox-radius: 0;
+}
+
+body.vw-global-theme[data-vw-global-theme="pixel-sky"] .workspace {
+  background-color: var(--vw-global-canvas);
+  background-image:
+    linear-gradient(var(--vw-global-grid) 1px, transparent 1px),
+    linear-gradient(90deg, var(--vw-global-grid) 1px, transparent 1px);
+  background-size: 20px 20px;
+}
+
+body.vw-global-theme[data-vw-global-theme="pixel-sky"] .workspace-ribbon,
+body.vw-global-theme[data-vw-global-theme="pixel-sky"] .workspace-sidedock-vault-profile,
+body.vw-global-theme[data-vw-global-theme="pixel-sky"] .workspace-tab-header-container,
+body.vw-global-theme[data-vw-global-theme="pixel-sky"] .status-bar {
+  background-color: var(--vw-global-panel);
+  border-color: var(--vw-global-line);
+}
+
+body.vw-global-theme[data-vw-global-theme="pixel-sky"] .workspace-split.mod-sidedock {
+  background-color: var(--vw-global-panel);
+  background-image: radial-gradient(
+    circle,
+    var(--vw-global-grid) 1px,
+    transparent 1.2px
+  );
+  background-position: 4px 4px;
+  background-size: 12px 12px;
+}
+
+body.vw-global-theme[data-vw-global-theme="pixel-sky"] .workspace-tab-header.is-active {
+  background-color: var(--vw-global-paper);
+  box-shadow: inset 0 -3px 0 var(--interactive-accent);
+}
+
+body.vw-global-theme[data-vw-global-theme="pixel-sky"] .workspace-tab-header:hover {
+  background-color: var(--background-modifier-hover);
+}
+
+body.vw-global-theme[data-vw-global-theme="pixel-sky"] .workspace-leaf-content,
+body.vw-global-theme[data-vw-global-theme="pixel-sky"] .view-content,
+body.vw-global-theme[data-vw-global-theme="pixel-sky"] .nav-files-container {
+  background-color: color-mix(in srgb, var(--vw-global-paper) 96%, transparent);
+}
+
+body.vw-global-theme[data-vw-global-theme="pixel-sky"] .markdown-reading-view,
+body.vw-global-theme[data-vw-global-theme="pixel-sky"] .markdown-source-view.mod-cm6 .cm-scroller {
+  background-image:
+    linear-gradient(var(--vw-global-grid) 1px, transparent 1px),
+    linear-gradient(90deg, var(--vw-global-grid) 1px, transparent 1px);
+  background-size: 20px 20px;
+}
+
+body.vw-global-theme[data-vw-global-theme="pixel-sky"] .nav-file-title.is-active,
+body.vw-global-theme[data-vw-global-theme="pixel-sky"] .nav-folder-title.is-active,
+body.vw-global-theme[data-vw-global-theme="pixel-sky"] .tree-item-self.is-active {
+  background-color: var(--vw-global-panel-strong);
+  box-shadow: inset 3px 0 0 var(--interactive-accent);
+}
+
+body.vw-global-theme[data-vw-global-theme="pixel-sky"] button,
+body.vw-global-theme[data-vw-global-theme="pixel-sky"] input,
+body.vw-global-theme[data-vw-global-theme="pixel-sky"] textarea,
+body.vw-global-theme[data-vw-global-theme="pixel-sky"] select,
+body.vw-global-theme[data-vw-global-theme="pixel-sky"] .dropdown {
+  border-color: var(--vw-global-line);
+}
+
+body.vw-global-theme[data-vw-global-theme="pixel-sky"] .modal,
+body.vw-global-theme[data-vw-global-theme="pixel-sky"] .menu,
+body.vw-global-theme[data-vw-global-theme="pixel-sky"] .suggestion-container,
+body.vw-global-theme[data-vw-global-theme="pixel-sky"] .prompt,
+body.vw-global-theme[data-vw-global-theme="pixel-sky"] .popover {
+  background-color: var(--vw-global-paper);
+  border: 1px solid var(--vw-global-line);
+  box-shadow: var(--vw-global-shadow);
+}
+
+body.vw-global-theme[data-vw-global-theme="pixel-sky"] .notice {
+  color: var(--vw-global-notice-text);
+  background-color: var(--vw-global-notice-bg);
+  border: 1px solid var(--vw-global-notice-border);
+  box-shadow: var(--vw-global-shadow);
+}
+
+body.vw-global-theme[data-vw-global-theme="pixel-sky"] .notice .notice-message,
+body.vw-global-theme[data-vw-global-theme="pixel-sky"] .notice .notice-message * {
+  color: inherit;
+  opacity: 1;
+}
+
+body.vw-global-theme[data-vw-global-theme="pixel-sky"] .setting-item,
+body.vw-global-theme[data-vw-global-theme="pixel-sky"] .modal-header,
+body.vw-global-theme[data-vw-global-theme="pixel-sky"] .prompt-input-container {
+  border-color: var(--vw-global-line);
+}
+
+body.vw-global-theme[data-vw-global-theme="pixel-sky"] ::selection {
+  background: color-mix(in srgb, var(--interactive-accent) 28%, transparent);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  body.vw-global-theme[data-vw-global-theme="pixel-sky"] *,
+  body.vw-global-theme[data-vw-global-theme="pixel-sky"] *::before,
+  body.vw-global-theme[data-vw-global-theme="pixel-sky"] *::after {
+    scroll-behavior: auto;
+  }
 }
 

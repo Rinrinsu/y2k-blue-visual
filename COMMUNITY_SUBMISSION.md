@@ -31,4 +31,4 @@
 - AI 功能默认关闭，网络用途已在 README 中披露。
 - API 密钥和桥接令牌使用 Obsidian SecretStorage。
 - 公开包不包含 `data.json`、`.env`、`.codex-bridge-token`、Vault 内容或私人绝对路径。
-- 视觉 PNG 已嵌入 `main.js`，官方安装器只下载三个标准文件时仍可完整显示。
+- 视觉资源已无损转换为 WebP 并嵌入 `main.js`；官方安装器只下载三个标准文件时仍可完整显示，同时保持 `main.js` 小于 5 MiB。

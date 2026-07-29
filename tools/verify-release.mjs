@@ -1,4 +1,4 @@
-import { readFile } from "node:fs/promises";
+import { readFile, stat } from "node:fs/promises";
 
 const readJson = async (path) => JSON.parse(await readFile(path, "utf8"));
 
@@ -9,6 +9,7 @@ const [manifest, packageJson, versions] = await Promise.all([
 ]);
 
 const errors = [];
+const maxSyncableMainSize = 5 * 1024 * 1024;
 const versionPattern = /^\d+\.\d+\.\d+$/;
 const pluginIdPattern = /^[a-z]+(?:-[a-z]+)*$/;
 
@@ -37,10 +38,17 @@ if (!String(manifest.description ?? "").trim()) {
   errors.push("manifest.json description is required");
 }
 
+const mainStats = await stat("main.js");
+if (mainStats.size > maxSyncableMainSize) {
+  errors.push(
+    `main.js must not exceed 5 MiB for Obsidian Sync Standard: ${mainStats.size} bytes`
+  );
+}
+
 if (errors.length > 0) {
   throw new Error(errors.join("\n"));
 }
 
 console.log(
-  `Release metadata verified: ${manifest.id} ${manifest.version}, Obsidian ${manifest.minAppVersion}+`
+  `Release verified: ${manifest.id} ${manifest.version}, Obsidian ${manifest.minAppVersion}+, main.js ${mainStats.size} bytes`
 );

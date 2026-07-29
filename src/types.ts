@@ -151,6 +151,7 @@ export interface VisualWorkspaceSettings {
   theme: ThemeId;
   iconPack: IconPackId;
   colorScheme: ColorSchemeId;
+  globalThemeEnabled: boolean;
   customColorsEnabled: boolean;
   uiColors: WorkspaceColorPalette;
   hideObsidianSidebarOnOpen: boolean;

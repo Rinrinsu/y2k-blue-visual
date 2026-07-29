@@ -1,9 +1,6 @@
 import { App, Notice, setIcon } from "obsidian";
 import { requestText } from "./modals";
-import {
-  createDefaultEditorDocumentState,
-  resolveAnnotation
-} from "./editor-model";
+import { resolveAnnotation } from "./editor-model";
 import {
   EditorDocumentState,
   EditorSpacing,
@@ -128,7 +125,7 @@ export class VisualMarkdownEditor {
     this.preserveSelectionOnPointer(block);
     block.addEventListener("change", () => {
       this.restoreVisualSelection();
-      document.execCommand("formatBlock", false, block.value);
+      this.applyVisualBlock(block.value);
       this.handleVisualCommand();
     });
 
@@ -147,7 +144,7 @@ export class VisualMarkdownEditor {
     this.preserveSelectionOnPointer(font);
     font.addEventListener("change", () => {
       this.restoreVisualSelection();
-      document.execCommand("fontName", false, font.value || "inherit");
+      this.applyVisualInlineStyle({ fontFamily: font.value });
       this.handleVisualCommand();
     });
 
@@ -164,7 +161,7 @@ export class VisualMarkdownEditor {
     this.preserveSelectionOnPointer(color);
     color.addEventListener("input", () => {
       this.restoreVisualSelection();
-      document.execCommand("foreColor", false, color.value);
+      this.applyVisualInlineStyle({ color: color.value });
       this.handleVisualCommand();
     });
 
@@ -249,7 +246,7 @@ export class VisualMarkdownEditor {
         return;
       }
       this.restoreVisualSelection();
-      document.execCommand(command, false);
+      this.applyVisualCommand(command);
       this.handleVisualCommand();
     });
   }
@@ -265,6 +262,111 @@ export class VisualMarkdownEditor {
 
   private preserveSelectionOnPointer(element: HTMLElement): void {
     element.addEventListener("mousedown", () => this.captureSelection());
+  }
+
+  private applyVisualCommand(command: string): void {
+    if (command === "bold") {
+      this.wrapVisualSelection("strong");
+    } else if (command === "italic") {
+      this.wrapVisualSelection("em");
+    } else if (command === "underline") {
+      this.wrapVisualSelection("u");
+    } else if (command === "justifyLeft") {
+      this.alignVisualBlock("left");
+    } else if (command === "justifyCenter") {
+      this.alignVisualBlock("center");
+    } else if (command === "insertUnorderedList") {
+      this.convertVisualBlockToList();
+    }
+  }
+
+  private applyVisualBlock(tagName: string): void {
+    const range = this.getVisualRange();
+    const block = range ? this.getVisualBlock(range) : undefined;
+    if (!block) return;
+    const replacement = tagName === "h1"
+      ? createEl("h1")
+      : tagName === "h2"
+        ? createEl("h2")
+        : tagName === "h3"
+          ? createEl("h3")
+          : createEl("p");
+    while (block.firstChild) replacement.appendChild(block.firstChild);
+    block.replaceWith(replacement);
+  }
+
+  private applyVisualInlineStyle(styles: {
+    color?: string;
+    fontFamily?: string;
+  }): void {
+    const range = this.getVisualRange();
+    if (!range || range.collapsed) return;
+    const span = createEl("span");
+    if (styles.color) span.style.color = styles.color;
+    if (styles.fontFamily) span.style.fontFamily = styles.fontFamily;
+    span.appendChild(range.extractContents());
+    range.insertNode(span);
+    this.selectInsertedNode(span);
+  }
+
+  private wrapVisualSelection(tagName: "strong" | "em" | "u"): void {
+    const range = this.getVisualRange();
+    if (!range || range.collapsed) return;
+    const wrapper = tagName === "strong"
+      ? createEl("strong")
+      : tagName === "em"
+        ? createEl("em")
+        : createEl("u");
+    wrapper.appendChild(range.extractContents());
+    range.insertNode(wrapper);
+    this.selectInsertedNode(wrapper);
+  }
+
+  private alignVisualBlock(alignment: "left" | "center"): void {
+    const range = this.getVisualRange();
+    const block = range ? this.getVisualBlock(range) : undefined;
+    if (block) block.style.textAlign = alignment;
+  }
+
+  private convertVisualBlockToList(): void {
+    const range = this.getVisualRange();
+    const block = range ? this.getVisualBlock(range) : undefined;
+    if (!block || block.tagName.toLowerCase() === "li") return;
+    const list = createEl("ul");
+    const item = list.createEl("li");
+    while (block.firstChild) item.appendChild(block.firstChild);
+    block.replaceWith(list);
+    this.selectInsertedNode(item);
+  }
+
+  private getVisualRange(): Range | undefined {
+    const selection = this.visualSurface.win.getSelection();
+    if (!selection?.rangeCount) return undefined;
+    const range = selection.getRangeAt(0);
+    const ancestor = range.commonAncestorContainer;
+    return ancestor === this.visualSurface || this.visualSurface.contains(ancestor)
+      ? range
+      : undefined;
+  }
+
+  private getVisualBlock(range: Range): HTMLElement | undefined {
+    const ancestor = range.commonAncestorContainer;
+    const element = ancestor.instanceOf(HTMLElement)
+      ? ancestor
+      : ancestor.parentElement;
+    const block = element?.closest("p,h1,h2,h3,h4,h5,h6,blockquote,div,li");
+    return block?.instanceOf(HTMLElement) && this.visualSurface.contains(block)
+      ? block
+      : undefined;
+  }
+
+  private selectInsertedNode(node: Node): void {
+    const selection = this.visualSurface.win.getSelection();
+    if (!selection) return;
+    const range = this.visualSurface.doc.createRange();
+    range.selectNodeContents(node);
+    selection.removeAllRanges();
+    selection.addRange(range);
   }
 
   private renderVisualSurface(): void {
@@ -352,7 +454,7 @@ export class VisualMarkdownEditor {
       return;
     }
 
-    const selection = window.getSelection();
+    const selection = this.visualSurface.win.getSelection();
     if (!selection?.rangeCount || selection.isCollapsed) return;
     const range = selection.getRangeAt(0);
     if (!this.visualSurface.contains(range.commonAncestorContainer)) return;
@@ -373,7 +475,7 @@ export class VisualMarkdownEditor {
 
   private restoreVisualSelection(): void {
     if (!this.selection?.range || this.mode !== "visual") return;
-    const selection = window.getSelection();
+    const selection = this.visualSurface.win.getSelection();
     selection?.removeAllRanges();
     selection?.addRange(this.selection.range);
   }
@@ -437,11 +539,11 @@ export class VisualMarkdownEditor {
       return;
     }
     this.restoreVisualSelection();
-    const image = document.createElement("img");
+    const image = createEl("img");
     image.dataset.markdownSrc = path;
     image.alt = "图片";
     image.src = this.resolveImageSource(path);
-    const selection = window.getSelection();
+    const selection = this.visualSurface.win.getSelection();
     if (selection?.rangeCount) {
       const range = selection.getRangeAt(0);
       range.deleteContents();
@@ -550,7 +652,7 @@ export class VisualMarkdownEditor {
     const range = findTextRange(this.visualSurface, comment.quote);
     if (!range) return;
     this.visualSurface.focus();
-    const selection = window.getSelection();
+    const selection = this.visualSurface.win.getSelection();
     selection?.removeAllRanges();
     selection?.addRange(range);
     range.startContainer.parentElement?.scrollIntoView({
@@ -754,12 +856,12 @@ function serializeVisualBlocks(parent: HTMLElement): string {
       if (text) lines.push(text);
       return;
     }
-    if (!(node instanceof HTMLElement)) return;
+    if (!node.instanceOf(HTMLElement)) return;
     const tag = node.tagName.toLowerCase();
     if (/^h[1-6]$/.test(tag)) {
       lines.push(`${"#".repeat(Number(tag.slice(1)))} ${serializeInline(node)}`);
     } else if (node.matches(".vw-editor-task-line")) {
-      const checkbox = node.querySelector("input[type='checkbox']") as HTMLInputElement | null;
+      const checkbox = node.querySelector<HTMLInputElement>("input[type='checkbox']");
       const text = node.querySelector(".vw-editor-task-text");
       lines.push(`- [${checkbox?.checked ? "x" : " "}] ${text ? serializeInline(text) : ""}`);
     } else if (tag === "ul" || tag === "ol") {
@@ -792,7 +894,7 @@ function serializeVisualBlocks(parent: HTMLElement): string {
 function serializeInline(node: Node): string {
   return Array.from(node.childNodes).map((child) => {
     if (child.nodeType === Node.TEXT_NODE) return child.textContent ?? "";
-    if (!(child instanceof HTMLElement)) return "";
+    if (!child.instanceOf(HTMLElement)) return "";
     const content = serializeInline(child);
     switch (child.tagName.toLowerCase()) {
       case "strong":
@@ -854,12 +956,12 @@ function truncate(value: string, length: number): string {
 }
 
 function findTextRange(root: HTMLElement, quote: string): Range | undefined {
-  const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
+  const walker = root.doc.createTreeWalker(root, NodeFilter.SHOW_TEXT);
   const nodes: Text[] = [];
   let text = "";
   let current = walker.nextNode();
   while (current) {
-    if (current instanceof Text) {
+    if (current.instanceOf(Text)) {
       nodes.push(current);
       text += current.data;
     }
@@ -887,7 +989,7 @@ function findTextRange(root: HTMLElement, quote: string): Range | undefined {
     offset = next;
   }
   if (!startNode || !endNode) return undefined;
-  const range = document.createRange();
+  const range = root.doc.createRange();
   range.setStart(startNode, startOffset);
   range.setEnd(endNode, endOffset);
   return range;
