@@ -28,9 +28,9 @@ jobs:
 
       - name: Verify metadata and build
         run: |
+          pnpm run build
           pnpm run verify:release
           test "${GITHUB_REF_NAME}" = "$(node -p "require('./manifest.json').version")"
-          pnpm run build
 
       - name: Create GitHub release
         env:
